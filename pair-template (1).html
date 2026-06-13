@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>페어 정리틀</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --main: #f9d7e3;
+    --main-light: #fdeef3;
+    --main-dark: #e8a8c0;
+    --accent: #d4537e;
+    --bg: #fff8fa;
+    --card: #ffffff;
+    --text: #5a4a52;
+    --text-soft: #a98a98;
+    --imessage-bubble: #ffd9e8;
+    --imessage-bubble-text: #3a2030;
+    --imessage-other: #f0f0f2;
+    --radius: 18px;
+    --font: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+
+  .toolbar{
+    max-width: 1300px;
+    margin: 0 auto 16px;
+    background: var(--card);
+    border: 1px solid var(--main);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .toolbar h1{
+    font-size: 16px;
+    margin: 0;
+    color: var(--accent);
+    margin-right: 8px;
+  }
+
+  .toolbar label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color: var(--text-soft);
+  }
+
+  .toolbar input[type="color"]{
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+  }
+
+  .toolbar button{
+    border: 1px solid var(--main-dark);
+    background: var(--main-light);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .toolbar button:hover{ background: var(--main); }
+
+  /* ===== App layout: 좌측 편집 패널 + 우측 미리보기 ===== */
+  .app-layout{
+    max-width: 1560px;
+    margin: 0 auto;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .edit-panel{
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--card);
+    border: 1px solid var(--main);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 24px;
+  }
+
+  .edit-panel h2{
+    font-size: 15px;
+    color: var(--accent);
+    margin: 0;
+    font-weight: bold;
+  }
+
+  .edit-panel .panel-actions{
+    display: flex;
+    gap: 8px;
+  }
+  .edit-panel .panel-actions button{
+    flex: 1;
+    border: 1px solid var(--main-dark);
+    background: var(--main-light);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 7px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .edit-panel .panel-actions button:hover{ background: var(--main); }
+
+  .edit-panel .section-title{
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-soft);
+    border-bottom: 1px solid var(--main-light);
+    padding-bottom: 4px;
+    margin-top: 4px;
+  }
+
+  .edit-panel .color-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .edit-panel .color-row input[type="color"]{
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+  }
+
+  .edit-panel .reset-btn{
+    border: 1px solid var(--main-dark);
+    background: transparent;
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .edit-panel .reset-btn:hover{ background: var(--main-light); }
+
+  .edit-panel .save-btn{
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: 9px 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .edit-panel .save-btn:hover{ opacity: 0.9; }
+
+  .edit-panel .hint{
+    font-size: 11px;
+    color: var(--text-soft);
+    line-height: 1.5;
+  }
+
+  .edit-panel .status-msg{
+    font-size: 11px;
+    color: var(--accent);
+    min-height: 14px;
+  }
+
+  .preview-wrap{
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 1100px){
+    .app-layout{ flex-direction: column; }
+    .edit-panel{
+      width: 100%;
+      position: static;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .edit-panel > *{ flex: 1 1 160px; }
+  }
+
+  /* ===== Main layout: 3:2 ratio base, wide, grows with content ===== */
+  .frame{
+    width: 100%;
+    margin: 0 auto;
+    min-height: calc(1080px * 2 / 3);
+    background: var(--card);
+    border-radius: 24px;
+    border: 1px solid var(--main);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  @media (max-width: 900px){
+    .frame{ min-height: auto; grid-template-columns: 1fr; }
+    .profile-row{ flex-wrap: wrap; }
+  }
+
+  @media (max-width: 560px){
+    .profile-row{ gap: 12px; }
+    .profile-card{ width: 130px; }
+    .profile-photo{ width: 110px; height: 110px; }
+    .relation-box{ width: 100%; order: 3; }
+  }
+
+  /* ===== Left: timeline area ===== */
+  .timeline-area{
+    background: linear-gradient(180deg, var(--main-light) 0%, #ffffff 60%);
+    padding: 20px 22px;
+    border-right: 1px solid var(--main);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Pair header (couple image banner + names) */
+  .pair-header{
+    display:flex;
+    flex-direction: column;
+    gap: 0;
+    margin: -20px -22px 0;
+    border-bottom: 2px dashed var(--main-dark);
+  }
+
+  .couple-banner{
+    width: 100%;
+    height: 240px;
+    background: var(--main-light);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+    cursor:pointer;
+    position: relative;
+    font-size: 13px;
+    color: var(--text-soft);
+    text-align:center;
+    line-height:1.5;
+  }
+  .couple-banner img{
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: none;
+  }
+  .couple-banner.has-image img{ display: block; }
+  .couple-banner .banner-fade{
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 70px;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #ffffff 100%);
+    pointer-events: none;
+  }
+  .couple-banner.has-image .photo-hint{ display:none; }
+  .couple-banner .banner-reupload{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.85);
+    color: var(--accent);
+    border: 1px solid var(--main-dark);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    display: none;
+    z-index: 2;
+    font-family: var(--font);
+  }
+  .couple-banner.has-image .banner-reupload{ display: block; }
+
+  /* 배너 출처: 우측 하단 오버레이 (색상 고정) */
+  .banner-credit{
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    font-size: 10px;
+    color: #9a9a9a;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .banner-credit .credit-text{ outline: none; }
+  .banner-credit .credit-remove{
+    font-size: 9px;
+    color: var(--main-dark);
+    cursor: pointer;
+    background: none;
+    border: none;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .banner-credit:hover .credit-remove{ opacity: 1; }
+  .banner-credit.hidden{ display: none; }
+
+  /* ===== Profile row (배너 아래, 인물 카드 + 관계 박스) ===== */
+  .profile-row{
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 18px;
+    padding: 22px 24px 6px;
+  }
+
+  .profile-card{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 168px;
+    flex-shrink: 0;
+  }
+
+  .profile-photo-wrap{
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .profile-photo{
+    width: 132px;
+    height: 132px;
+    border-radius: 50%;
+    background: var(--main-light);
+    border: 4px solid var(--main);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+    cursor:pointer;
+    position: relative;
+    font-size: 12px;
+    color: var(--text-soft);
+    text-align:center;
+    line-height:1.4;
+  }
+  .profile-card.side-a .profile-photo{ border-color: var(--photo-border-a, var(--main)); }
+  .profile-card.side-b .profile-photo{ border-color: var(--photo-border-b, var(--main)); }
+  .profile-photo img{
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
+    display: none;
+  }
+  .profile-photo.has-image img{ display: block; }
+  .profile-photo.has-image .photo-hint{ display:none; }
+  .profile-photo .photo-reupload{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255,255,255,0.85);
+    color: var(--accent);
+    font-size: 10px;
+    padding: 3px 0;
+    display: none;
+    z-index: 2;
+  }
+  .profile-photo.has-image .photo-reupload{ display: block; }
+
+  /* 프로필 사진 출처: 사진 바로 아래 */
+  .profile-photo-credit{
+    font-size: 10px;
+    color: #9a9a9a;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 14px;
+  }
+  .profile-photo-credit .credit-text{ outline: none; }
+  .profile-photo-credit .credit-remove{
+    font-size: 9px;
+    color: var(--main-dark);
+    cursor: pointer;
+    background: none;
+    border: none;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .profile-photo-credit:hover .credit-remove{ opacity: 1; }
+  .profile-photo-credit.hidden{ display: none; }
+
+  /* 이름 배지 (A/B 각각 색상 커스텀) */
+  .profile-name{
+    color: #fff;
+    font-weight: bold;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    border-radius: 999px;
+    padding: 6px 22px;
+    outline: none;
+    text-align: center;
+    min-width: 90px;
+  }
+  .profile-card.side-a .profile-name{ background: var(--name-color-a, #d4537e); }
+  .profile-card.side-b .profile-name{ background: var(--name-color-b, #d4537e); }
+
+  /* 기본 정보 박스 (나이, 키 등) */
+  .profile-info{
+    background: var(--card);
+    border: 1px solid var(--main);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    line-height: 1.6;
+  }
+  .profile-info:empty::before{
+    content: attr(data-placeholder);
+    color: var(--text-soft);
+  }
+
+  /* 가운데 관계 정의 박스 */
+  .relation-box{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 200px;
+    flex-shrink: 0;
+    padding-top: 6px;
+  }
+
+  .relation-shipname{
+    font-size: 19px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .relation-shipname .ship-part{
+    outline: none;
+    color: var(--ship-color-a, var(--accent));
+  }
+  .relation-shipname .ship-part.b{
+    color: var(--ship-color-b, var(--accent));
+  }
+  .relation-shipname .ship-sep{
+    color: var(--text-soft);
+  }
+
+  .relation-pill{
+    background: var(--main-light);
+    border: 1px solid var(--main);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    line-height: 1.5;
+  }
+  .relation-pill:empty::before{
+    content: attr(data-placeholder);
+    color: var(--text-soft);
+  }
+  .relation-pill.alt{
+    background: var(--card);
+    border-color: var(--main-dark);
+  }
+
+  .relation-arrow{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    color: var(--main-dark);
+    font-size: 16px;
+  }
+  .relation-arrow.reverse{ transform: scaleX(-1); }
+
+  /* 메신저 헤더용 작은 아바타 */
+  .pair-photo.small{
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--main-light);
+    border: 2px solid var(--main);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+    cursor:pointer;
+    position: relative;
+    font-size: 8px;
+    color: var(--text-soft);
+    text-align:center;
+    line-height:1.2;
+  }
+  .pair-photo.small img{
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
+    display: none;
+  }
+  .pair-photo.small.has-image img{ display: block; }
+  .pair-photo.small.has-image .photo-hint{ display:none; }
+
+  /* timeline title */
+  .timeline-title{
+    font-size: 17px;
+    color: var(--accent);
+    font-weight: bold;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    outline:none;
+  }
+  .timeline-title::before{ content:"♡"; }
+
+  /* timeline steps - horizontal cards */
+  .timeline{
+    display: grid;
+    grid-template-columns: repeat(var(--tl-cols, 4), 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .tl-step{
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--main);
+    border-radius: 16px;
+    padding: 14px 14px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tl-step .tl-label{
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: bold;
+    outline:none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tl-step .tl-label .tl-label-text{
+    outline: none;
+    flex: 1;
+  }
+  .tl-label-color{
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    opacity: 0;
+    transition: opacity .15s;
+    flex-shrink: 0;
+  }
+  .tl-step:hover .tl-label-color{ opacity: 1; }
+  .capture-mode .tl-label-color{ display: none !important; }
+
+  .tl-step .tl-content{
+    font-size: 13px;
+    line-height: 1.7;
+    outline:none;
+    min-height: 20px;
+    flex: 1;
+  }
+  .tl-step .tl-content:empty::before{
+    content: attr(data-placeholder);
+    color: var(--text-soft);
+  }
+
+  /* ===== Right: messenger + music area ===== */
+  .messenger-area{
+    background: #ffffff;
+    display:flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .imessage-section{
+    display: flex;
+    flex-direction: column;
+    flex: 1.1;
+    min-height: 0;
+    border-bottom: 1px solid var(--main);
+  }
+
+  .music-section{
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background: #fff;
+  }
+
+  .imessage-header{
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #e5e5ea;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    background: #fafafa;
+  }
+  .imessage-header .avatars{
+    display:flex;
+  }
+  .imessage-header .avatars .pair-photo:nth-child(2){
+    margin-left: -12px;
+    border-color: var(--main-light);
+  }
+  .imessage-header .chat-title{
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--text);
+    outline:none;
+  }
+  .imessage-header .chat-sub{
+    font-size: 11px;
+    color: var(--text-soft);
+    outline:none;
+  }
+
+  .imessage-body{
+    flex: 1;
+    padding: 16px 14px;
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #ffffff;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .imsg-date{
+    text-align:center;
+    font-size: 11px;
+    color: var(--text-soft);
+    margin: 6px 0 10px;
+    position: relative;
+  }
+  .imsg-date .date-text{ outline: none; }
+
+  .bubble-row{
+    display:flex;
+    flex-direction: column;
+    max-width: 75%;
+    min-width: 0;
+    position: relative;
+  }
+  .bubble-row.left{ align-self: flex-start; align-items: flex-start; }
+  .bubble-row.right{ align-self: flex-end; align-items: flex-end; }
+
+  .msg-remove{
+    position:absolute;
+    top: -2px;
+    font-size: 10px;
+    color: var(--main-dark);
+    cursor:pointer;
+    background:none;
+    border:none;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .bubble-row:hover .msg-remove{ opacity: 1; }
+  .bubble-row.left .msg-remove{ right: -22px; }
+  .bubble-row.right .msg-remove{ left: -22px; }
+
+  .date-remove{
+    position:absolute;
+    right: -22px;
+    top: 0;
+    font-size: 10px;
+    color: var(--main-dark);
+    cursor:pointer;
+    background:none;
+    border:none;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .imsg-date:hover .date-remove{ opacity: 1; }
+
+  .bubble{
+    padding: 8px 14px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.45;
+    outline: none;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .bubble-row.left .bubble{
+    background: var(--imessage-other);
+    color: #1c1c1e;
+    border-bottom-left-radius: 4px;
+  }
+  .bubble-row.right .bubble{
+    background: var(--imessage-bubble);
+    color: var(--imessage-bubble-text);
+    border-bottom-right-radius: 4px;
+  }
+
+  .bubble-row + .bubble-row.left,
+  .bubble-row + .bubble-row.right{
+    margin-top: -2px;
+  }
+
+  .read-status{
+    font-size: 10px;
+    color: var(--text-soft);
+    margin: 3px 4px 0;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .imessage-inputbar{
+    border-top: 1px solid #e5e5ea;
+    padding: 10px 12px;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    background: #fafafa;
+  }
+  .imessage-inputbar .fake-input{
+    flex:1;
+    border: 1px solid #d8d8dc;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text-soft);
+    background:#fff;
+  }
+  .imessage-inputbar .send-icon{
+    width: 28px; height:28px;
+    border-radius:50%;
+    background: var(--accent);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 14px;
+  }
+
+  /* message control buttons */
+  .msg-controls{
+    padding: 8px 12px;
+    border-top: 1px dashed var(--main);
+    display:flex;
+    gap:8px;
+    flex-wrap: wrap;
+    background: var(--main-light);
+  }
+  .msg-controls button{
+    font-size: 11px;
+    border:1px solid var(--main-dark);
+    background:#fff;
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 5px 10px;
+    cursor:pointer;
+    font-family: var(--font);
+  }
+  .msg-controls button:hover{ background: var(--main-light); }
+
+  .add-step-btn{
+    align-self: center;
+    border: 1px dashed var(--main-dark);
+    background: transparent;
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+    margin-top: 4px;
+  }
+  .add-step-btn:hover{ background: var(--main-light); }
+
+  .step-remove{
+    position:absolute;
+    right: 8px;
+    bottom: 8px;
+    font-size: 11px;
+    color: var(--main-dark);
+    cursor:pointer;
+    background:none;
+    border:none;
+  }
+
+  /* ===== Apple Music style playlist ===== */
+  .music-header{
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #e5e5ea;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+  .music-header-top{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .music-platform{
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-soft);
+    letter-spacing: 0.5px;
+  }
+  .music-add-btn{
+    font-size: 10px;
+    border: 1px solid var(--main-dark);
+    background: #fff;
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 3px 9px;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .music-add-btn:hover{ background: var(--main-light); }
+
+  .music-cover{
+    width: 92px;
+    height: 92px;
+    border-radius: 12px;
+    background: var(--main-light);
+    border: 1px solid var(--main);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+    cursor:pointer;
+    position: relative;
+    font-size: 10px;
+    color: var(--text-soft);
+    text-align:center;
+    line-height:1.3;
+  }
+  .music-cover img{
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: none;
+  }
+  .music-cover.has-image img{ display: block; }
+  .music-cover.has-image .photo-hint{ display:none; }
+  .music-cover .photo-reupload{
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.85);
+    color: var(--accent);
+    font-size: 9px;
+    padding: 2px 0;
+    display: none;
+    z-index: 2;
+  }
+  .music-cover.has-image .photo-reupload{ display: block; }
+
+  .music-title{
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--text);
+    outline: none;
+  }
+  .music-subtitle{
+    font-size: 11px;
+    color: var(--text-soft);
+    outline: none;
+  }
+
+  .music-list{
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 16px 12px;
+    min-height: 0;
+  }
+
+  .music-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+  }
+  .music-row:last-child{ border-bottom: none; }
+
+  .music-index{
+    font-size: 12px;
+    color: var(--text-soft);
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* 곡별 앨범 커버 썸네일 */
+  .music-thumb{
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: var(--main-light);
+    border: 1px solid var(--main);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+    cursor:pointer;
+    position: relative;
+    font-size: 9px;
+    color: var(--text-soft);
+    text-align:center;
+    line-height:1.2;
+  }
+  .music-thumb img{
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: none;
+  }
+  .music-thumb.has-image img{ display: block; }
+  .music-thumb.has-image .photo-hint{ display:none; }
+  .music-thumb .photo-hint{ font-size: 8px; }
+
+  .music-info{
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .music-song{
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .music-artist{
+    font-size: 11px;
+    color: var(--text-soft);
+    outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .music-duration{
+    font-size: 11px;
+    color: var(--text-soft);
+    flex-shrink: 0;
+    outline: none;
+    min-width: 32px;
+    text-align: right;
+  }
+
+  .music-remove{
+    position: absolute;
+    right: -22px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: var(--main-dark);
+    cursor: pointer;
+    background: none;
+    border: none;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .music-row:hover .music-remove{ opacity: 1; }
+
+  .capture-mode .music-add-btn,
+  .capture-mode .music-remove{
+    display: none !important;
+  }
+
+  ::placeholder{ color: var(--text-soft); }
+
+  /* 붙여넣기로 인한 서식 오염 방지: 내부 요소는 항상 부모 스타일을 상속 */
+  [contenteditable="true"] *{
+    font-size: inherit !important;
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    color: inherit !important;
+    background: transparent !important;
+    line-height: inherit !important;
+  }
+
+  [contenteditable="true"]:hover{
+    background: rgba(249,215,227,0.25);
+    border-radius: 4px;
+  }
+  [contenteditable="true"]:focus{
+    background: rgba(249,215,227,0.45);
+    border-radius: 4px;
+  }
+
+  .photo-hint{
+    font-size: 22px;
+    color: var(--main-dark);
+  }
+
+  .pair-photo .photo-hint{ font-size: 20px; }
+
+  /* 이미지 저장 시 편집 UI 숨김 */
+  .capture-mode .step-remove,
+  .capture-mode .msg-remove,
+  .capture-mode .date-remove,
+  .capture-mode .add-step-btn,
+  .capture-mode .msg-controls,
+  .capture-mode .banner-reupload,
+  .capture-mode .photo-reupload,
+  .capture-mode .credit-remove{
+    display: none !important;
+  }
+  .capture-mode [contenteditable="true"]:hover,
+  .capture-mode [contenteditable="true"]:focus{
+    background: transparent !important;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- 좌측 편집 패널 -->
+  <div class="edit-panel">
+    <h2>♡ 페어 정리틀 편집</h2>
+
+    <div class="panel-actions">
+      <button id="saveTempBtn">임시저장</button>
+      <button id="loadTempBtn">불러오기</button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+
+    <div class="section-title">전체 색상</div>
+    <div class="color-row">
+      <span>메인 색상</span>
+      <input type="color" id="colorMain" value="#f9d7e3">
+    </div>
+    <div class="color-row">
+      <span>강조 색상</span>
+      <input type="color" id="colorAccent" value="#d4537e">
+    </div>
+
+    <div class="section-title">이름 배지 색상</div>
+    <div class="color-row">
+      <span>A 이름 색상</span>
+      <input type="color" id="colorNameA" value="#d4537e">
+    </div>
+    <div class="color-row">
+      <span>B 이름 색상</span>
+      <input type="color" id="colorNameB" value="#d4537e">
+    </div>
+
+    <div class="section-title">프로필 사진 테두리</div>
+    <div class="color-row">
+      <span>A 테두리 색상</span>
+      <input type="color" id="colorPhotoBorderA" value="#f9d7e3">
+    </div>
+    <div class="color-row">
+      <span>B 테두리 색상</span>
+      <input type="color" id="colorPhotoBorderB" value="#f9d7e3">
+    </div>
+
+    <div class="section-title">페어명 글자색</div>
+    <div class="color-row">
+      <span>A 글자색</span>
+      <input type="color" id="colorShipA" value="#d4537e">
+    </div>
+    <div class="color-row">
+      <span>B 글자색</span>
+      <input type="color" id="colorShipB" value="#d4537e">
+    </div>
+
+    <div class="section-title">메신저 말풍선</div>
+    <div class="color-row">
+      <span>내 말풍선 색</span>
+      <input type="color" id="colorMyBubble" value="#ffd9e8">
+    </div>
+    <div class="color-row">
+      <span>내 말풍선 글자색</span>
+      <input type="color" id="colorMyBubbleText" value="#3a2030">
+    </div>
+
+    <button class="reset-btn" id="resetColors">색상 초기화</button>
+    <button class="save-btn" id="saveImageBtn">📷 이미지로 저장</button>
+
+    <div class="hint">
+      사진, 글자, 출처는 미리보기에서 직접 클릭해서 편집하세요. 색상만 이 패널에서 바꿀 수 있어요.
+    </div>
+  </div>
+
+  <!-- 우측 미리보기 -->
+  <div class="preview-wrap">
+
+<div class="frame">
+  <!-- LEFT: TIMELINE -->
+  <div class="timeline-area">
+
+    <div class="pair-header">
+      <div class="couple-banner" id="couplePhoto" onclick="triggerUpload(this, event)">
+        <img alt="커플컷">
+        <span class="photo-hint">♡ 커플컷 배너<br>(클릭해서 이미지 업로드)</span>
+        <div class="banner-fade"></div>
+        <button class="banner-reupload" onclick="event.stopPropagation(); triggerUpload(this.parentElement, event)">이미지 변경</button>
+        <div class="banner-credit">
+          <span class="credit-text" contenteditable="true">ⓒ 출처를 입력해주세요</span>
+          <button class="credit-remove" onclick="event.stopPropagation(); removeNode(this)">✕</button>
+        </div>
+        <input type="file" accept="image/*" style="display:none">
+      </div>
+
+      <div class="profile-row">
+        <!-- 캐릭터 A 프로필 -->
+        <div class="profile-card side-a">
+          <div class="profile-photo-wrap">
+            <div class="profile-photo" onclick="triggerUpload(this, event)">
+              <img alt="A">
+              <span class="photo-hint">A 사진<br>(클릭해서 업로드)</span>
+              <button class="photo-reupload" onclick="event.stopPropagation(); triggerUpload(this.parentElement, event)">변경</button>
+              <input type="file" accept="image/*" style="display:none">
+            </div>
+          </div>
+          <div class="profile-photo-credit">
+            <span class="credit-text" contenteditable="true">ⓒ 출처</span>
+            <button class="credit-remove" onclick="removeNode(this)">✕</button>
+          </div>
+          <div class="profile-name" contenteditable="true">NAME</div>
+          <div class="profile-info" contenteditable="true" data-placeholder="나이 / 키 / 직업 등 기본 정보"></div>
+        </div>
+
+        <!-- 가운데 관계 박스 -->
+        <div class="relation-box">
+          <div class="relation-shipname">
+            <span class="ship-part a" contenteditable="true">캐릭터A</span>
+            <span class="ship-sep">✕</span>
+            <span class="ship-part b" contenteditable="true">캐릭터B</span>
+          </div>
+          <div class="relation-pill" contenteditable="true" data-placeholder="A가 B를 부르는 호칭 / 생각하는 마음을 적어주세요"></div>
+          <div class="relation-arrow">➜</div>
+          <div class="relation-arrow reverse">➜</div>
+          <div class="relation-pill alt" contenteditable="true" data-placeholder="B가 A를 부르는 호칭 / 생각하는 마음을 적어주세요"></div>
+        </div>
+
+        <!-- 캐릭터 B 프로필 -->
+        <div class="profile-card side-b">
+          <div class="profile-photo-wrap">
+            <div class="profile-photo" onclick="triggerUpload(this, event)">
+              <img alt="B">
+              <span class="photo-hint">B 사진<br>(클릭해서 업로드)</span>
+              <button class="photo-reupload" onclick="event.stopPropagation(); triggerUpload(this.parentElement, event)">변경</button>
+              <input type="file" accept="image/*" style="display:none">
+            </div>
+          </div>
+          <div class="profile-photo-credit">
+            <span class="credit-text" contenteditable="true">ⓒ 출처</span>
+            <button class="credit-remove" onclick="removeNode(this)">✕</button>
+          </div>
+          <div class="profile-name" contenteditable="true">NAME</div>
+          <div class="profile-info" contenteditable="true" data-placeholder="나이 / 키 / 직업 등 기본 정보"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-title" contenteditable="true">TIMELINE</div>
+
+    <div class="timeline" id="timelineList">
+      <div class="tl-step">
+        <div class="tl-label">
+          <span class="tl-label-text" contenteditable="true">STEP 1. 첫 만남</span>
+          <input type="color" class="tl-label-color" value="#d4537e" oninput="this.previousElementSibling.style.color=this.value" title="이 단계 글자색">
+        </div>
+        <div class="tl-content" contenteditable="true" data-placeholder="내용을 입력해주세요"></div>
+        <button class="step-remove" onclick="removeStep(this)">✕</button>
+      </div>
+      <div class="tl-step">
+        <div class="tl-label">
+          <span class="tl-label-text" contenteditable="true">STEP 2. 가까워지는 계기</span>
+          <input type="color" class="tl-label-color" value="#d4537e" oninput="this.previousElementSibling.style.color=this.value" title="이 단계 글자색">
+        </div>
+        <div class="tl-content" contenteditable="true" data-placeholder="내용을 입력해주세요"></div>
+        <button class="step-remove" onclick="removeStep(this)">✕</button>
+      </div>
+      <div class="tl-step">
+        <div class="tl-label">
+          <span class="tl-label-text" contenteditable="true">STEP 3. 갈등 / 위기</span>
+          <input type="color" class="tl-label-color" value="#d4537e" oninput="this.previousElementSibling.style.color=this.value" title="이 단계 글자색">
+        </div>
+        <div class="tl-content" contenteditable="true" data-placeholder="내용을 입력해주세요"></div>
+        <button class="step-remove" onclick="removeStep(this)">✕</button>
+      </div>
+      <div class="tl-step">
+        <div class="tl-label">
+          <span class="tl-label-text" contenteditable="true">STEP 4. 화해 / 결말</span>
+          <input type="color" class="tl-label-color" value="#d4537e" oninput="this.previousElementSibling.style.color=this.value" title="이 단계 글자색">
+        </div>
+        <div class="tl-content" contenteditable="true" data-placeholder="내용을 입력해주세요"></div>
+        <button class="step-remove" onclick="removeStep(this)">✕</button>
+      </div>
+    </div>
+
+    <button class="add-step-btn" onclick="addStep()">+ 단계 추가</button>
+  </div>
+
+  <!-- RIGHT: iMESSAGE + MUSIC -->
+  <div class="messenger-area">
+    <div class="imessage-section">
+    <div class="imessage-header">
+      <div class="avatars">
+        <div class="pair-photo small" onclick="triggerUpload(this, event)">
+          <img alt="A">
+          <span class="photo-hint" style="font-size:14px;">A</span>
+          <input type="file" accept="image/*" style="display:none">
+        </div>
+        <div class="pair-photo small" onclick="triggerUpload(this, event)">
+          <img alt="B">
+          <span class="photo-hint" style="font-size:14px;">B</span>
+          <input type="file" accept="image/*" style="display:none">
+        </div>
+      </div>
+      <div>
+        <div class="chat-title" contenteditable="true">캐릭터A, 캐릭터B</div>
+        <div class="chat-sub" contenteditable="true">메신저 대화 제목 / 설명</div>
+      </div>
+    </div>
+
+    <div class="imessage-body" id="msgBody">
+      <div class="imsg-date">
+        <span class="date-text" contenteditable="true">오늘 오후 9:14</span>
+        <button class="date-remove" onclick="removeNode(this)">✕</button>
+      </div>
+
+      <div class="bubble-row left">
+        <div class="bubble" contenteditable="true">오늘 뭐해?</div>
+        <button class="msg-remove" onclick="removeNode(this)">✕</button>
+      </div>
+
+      <div class="bubble-row right">
+        <div class="bubble" contenteditable="true">너 생각 중이었어 ㅎㅎ</div>
+        <button class="msg-remove" onclick="removeNode(this)">✕</button>
+      </div>
+
+      <div class="bubble-row left">
+        <div class="bubble" contenteditable="true">진짜? 보고싶다</div>
+        <button class="msg-remove" onclick="removeNode(this)">✕</button>
+      </div>
+
+      <div class="bubble-row right">
+        <div class="bubble" contenteditable="true">나도 ♡</div>
+        <div class="read-status" contenteditable="true">읽음</div>
+        <button class="msg-remove" onclick="removeNode(this)">✕</button>
+      </div>
+    </div>
+
+    <div class="msg-controls">
+      <button onclick="addBubble('left')">+ A 말풍선</button>
+      <button onclick="addBubble('right')">+ B 말풍선</button>
+      <button onclick="addDate()">+ 날짜 구분선</button>
+    </div>
+
+    <div class="imessage-inputbar">
+      <div class="fake-input">iMessage</div>
+      <div class="send-icon">↑</div>
+    </div>
+    </div>
+
+    <!-- APPLE MUSIC STYLE PLAYLIST -->
+    <div class="music-section">
+      <div class="music-header">
+        <div class="music-header-top">
+          <span class="music-platform">♪ Music</span>
+          <button class="music-add-btn" onclick="addSong()">+ 곡 추가</button>
+        </div>
+        <div class="music-cover" id="musicCover" onclick="triggerUpload(this, event)">
+          <img alt="플레이리스트 커버">
+          <span class="photo-hint">앨범 커버<br>(클릭해서 업로드)</span>
+          <button class="photo-reupload" onclick="event.stopPropagation(); triggerUpload(this.parentElement, event)">변경</button>
+          <input type="file" accept="image/*" style="display:none">
+        </div>
+        <div class="music-title" contenteditable="true">PLAYLIST</div>
+        <div class="music-subtitle" contenteditable="true">페어를 떠올리며 만든 곡 모음</div>
+      </div>
+
+      <div class="music-list" id="musicList">
+        <div class="music-row">
+          <span class="music-index">1</span>
+          <div class="music-thumb" onclick="triggerUpload(this, event)">
+            <img alt="앨범커버">
+            <span class="photo-hint">＋</span>
+            <input type="file" accept="image/*" style="display:none">
+          </div>
+          <div class="music-info">
+            <div class="music-song" contenteditable="true">노래 제목 1</div>
+            <div class="music-artist" contenteditable="true">아티스트명</div>
+          </div>
+          <span class="music-duration" contenteditable="true">3:24</span>
+          <button class="music-remove" onclick="removeNode(this)">✕</button>
+        </div>
+        <div class="music-row">
+          <span class="music-index">2</span>
+          <div class="music-thumb" onclick="triggerUpload(this, event)">
+            <img alt="앨범커버">
+            <span class="photo-hint">＋</span>
+            <input type="file" accept="image/*" style="display:none">
+          </div>
+          <div class="music-info">
+            <div class="music-song" contenteditable="true">노래 제목 2</div>
+            <div class="music-artist" contenteditable="true">아티스트명</div>
+          </div>
+          <span class="music-duration" contenteditable="true">4:01</span>
+          <button class="music-remove" onclick="removeNode(this)">✕</button>
+        </div>
+        <div class="music-row">
+          <span class="music-index">3</span>
+          <div class="music-thumb" onclick="triggerUpload(this, event)">
+            <img alt="앨범커버">
+            <span class="photo-hint">＋</span>
+            <input type="file" accept="image/*" style="display:none">
+          </div>
+          <div class="music-info">
+            <div class="music-song" contenteditable="true">노래 제목 3</div>
+            <div class="music-artist" contenteditable="true">아티스트명</div>
+          </div>
+          <span class="music-duration" contenteditable="true">3:47</span>
+          <button class="music-remove" onclick="removeNode(this)">✕</button>
+        </div>
+        <div class="music-row">
+          <span class="music-index">4</span>
+          <div class="music-thumb" onclick="triggerUpload(this, event)">
+            <img alt="앨범커버">
+            <span class="photo-hint">＋</span>
+            <input type="file" accept="image/*" style="display:none">
+          </div>
+          <div class="music-info">
+            <div class="music-song" contenteditable="true">노래 제목 4</div>
+            <div class="music-artist" contenteditable="true">아티스트명</div>
+          </div>
+          <span class="music-duration" contenteditable="true">2:58</span>
+          <button class="music-remove" onclick="removeNode(this)">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+
+<script>
+/* 모든 contenteditable 요소: 붙여넣기 시 서식 제거하고 일반 텍스트로만 삽입 */
+document.addEventListener('paste', function(e){
+  const target = e.target;
+  if(target && target.isContentEditable){
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  }
+});
+
+function triggerUpload(el, evt){
+  if(evt) evt.stopPropagation();
+  let input = el.querySelector('input[type="file"]');
+  input.value = '';
+  input.click();
+  input.onchange = (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const img = el.querySelector('img');
+      if(img){
+        img.src = ev.target.result;
+      }
+      el.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+function updateTimelineCols(){
+  const list = document.getElementById('timelineList');
+  const count = list.querySelectorAll('.tl-step').length;
+  const cols = Math.max(1, Math.min(4, count));
+  list.style.setProperty('--tl-cols', cols);
+}
+
+function addStep(){
+  const list = document.getElementById('timelineList');
+  const div = document.createElement('div');
+  div.className = 'tl-step';
+  div.innerHTML = `
+    <div class="tl-label">
+      <span class="tl-label-text" contenteditable="true">새 단계</span>
+      <input type="color" class="tl-label-color" value="#d4537e" oninput="this.previousElementSibling.style.color=this.value" title="이 단계 글자색">
+    </div>
+    <div class="tl-content" contenteditable="true" data-placeholder="내용을 입력해주세요"></div>
+    <button class="step-remove" onclick="removeStep(this)">✕</button>
+  `;
+  list.appendChild(div);
+  updateTimelineCols();
+}
+
+function removeStep(btn){
+  btn.closest('.tl-step').remove();
+  updateTimelineCols();
+}
+
+function addBubble(side){
+  const body = document.getElementById('msgBody');
+  const row = document.createElement('div');
+  row.className = `bubble-row ${side}`;
+  row.innerHTML = `
+    <div class="bubble" contenteditable="true">새 메시지</div>
+    <button class="msg-remove" onclick="removeNode(this)">✕</button>
+  `;
+  body.appendChild(row);
+  if(side === 'right'){
+    refreshReadStatus();
+  }
+  body.scrollTop = body.scrollHeight;
+}
+
+function addDate(){
+  const body = document.getElementById('msgBody');
+  const el = document.createElement('div');
+  el.className = 'imsg-date';
+  el.innerHTML = `
+    <span class="date-text" contenteditable="true">날짜 / 시간</span>
+    <button class="date-remove" onclick="removeNode(this)">✕</button>
+  `;
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+}
+
+function removeNode(btn){
+  const row = btn.closest('.bubble-row') || btn.closest('.imsg-date') || btn.closest('.profile-photo-credit') || btn.closest('.banner-credit') || btn.closest('.music-row');
+  if(!row) return;
+  const wasRight = row.classList && row.classList.contains('right');
+  if(row.classList && (row.classList.contains('profile-photo-credit') || row.classList.contains('banner-credit'))){
+    row.classList.add('hidden');
+    return;
+  }
+  const wasMusic = row.classList && row.classList.contains('music-row');
+  row.remove();
+  if(wasRight){ refreshReadStatus(); }
+  if(wasMusic){ refreshMusicIndexes(); }
+}
+
+/* 플레이리스트 곡 추가 */
+function addSong(){
+  const list = document.getElementById('musicList');
+  const row = document.createElement('div');
+  row.className = 'music-row';
+  row.innerHTML = `
+    <span class="music-index"></span>
+    <div class="music-thumb" onclick="triggerUpload(this, event)">
+      <img alt="앨범커버">
+      <span class="photo-hint">＋</span>
+      <input type="file" accept="image/*" style="display:none">
+    </div>
+    <div class="music-info">
+      <div class="music-song" contenteditable="true">새 노래 제목</div>
+      <div class="music-artist" contenteditable="true">아티스트명</div>
+    </div>
+    <span class="music-duration" contenteditable="true">0:00</span>
+    <button class="music-remove" onclick="removeNode(this)">✕</button>
+  `;
+  list.appendChild(row);
+  refreshMusicIndexes();
+}
+
+function refreshMusicIndexes(){
+  const rows = document.querySelectorAll('#musicList .music-row');
+  rows.forEach((row, i)=>{
+    row.querySelector('.music-index').textContent = i + 1;
+  });
+}
+
+/* 읽음/안읽음 표시는 B(우측)의 가장 마지막 말풍선 아래에만 표시 */
+function refreshReadStatus(){
+  const body = document.getElementById('msgBody');
+  // 기존 읽음 표시 모두 제거
+  body.querySelectorAll('.read-status').forEach(el => el.remove());
+  // 가장 마지막 right bubble-row 찾기
+  const rightRows = body.querySelectorAll('.bubble-row.right');
+  if(rightRows.length === 0) return;
+  const lastRight = rightRows[rightRows.length - 1];
+  const status = document.createElement('div');
+  status.className = 'read-status';
+  status.contentEditable = 'true';
+  status.textContent = '읽음';
+  status.title = '클릭해서 "읽음" / "안읽음" 등으로 수정하세요';
+  // 삭제 버튼 앞에 삽입
+  const removeBtn = lastRight.querySelector('.msg-remove');
+  lastRight.insertBefore(status, removeBtn);
+}
+
+/* Color customization */
+const root = document.documentElement.style;
+const defaults = {
+  main:'#f9d7e3', accent:'#d4537e',
+  myBubble:'#ffd9e8', myBubbleText:'#3a2030',
+  nameA:'#d4537e', nameB:'#d4537e',
+  photoBorderA:'#f9d7e3', photoBorderB:'#f9d7e3',
+  shipA:'#d4537e', shipB:'#d4537e'
+};
+
+function hexToRgb(hex){
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return {r,g,b};
+}
+function lighten(hex, amt){
+  const {r,g,b} = hexToRgb(hex);
+  const nr = Math.min(255, r + amt);
+  const ng = Math.min(255, g + amt);
+  const nb = Math.min(255, b + amt);
+  return `rgb(${nr},${ng},${nb})`;
+}
+function darken(hex, amt){
+  const {r,g,b} = hexToRgb(hex);
+  const nr = Math.max(0, r - amt);
+  const ng = Math.max(0, g - amt);
+  const nb = Math.max(0, b - amt);
+  return `rgb(${nr},${ng},${nb})`;
+}
+
+document.getElementById('colorMain').addEventListener('input', (e)=>{
+  const val = e.target.value;
+  root.setProperty('--main', val);
+  root.setProperty('--main-light', lighten(val, 20));
+  root.setProperty('--main-dark', darken(val, 30));
+});
+
+document.getElementById('colorAccent').addEventListener('input', (e)=>{
+  root.setProperty('--accent', e.target.value);
+});
+
+document.getElementById('colorNameA').addEventListener('input', (e)=>{
+  root.setProperty('--name-color-a', e.target.value);
+});
+
+document.getElementById('colorNameB').addEventListener('input', (e)=>{
+  root.setProperty('--name-color-b', e.target.value);
+});
+
+document.getElementById('colorPhotoBorderA').addEventListener('input', (e)=>{
+  root.setProperty('--photo-border-a', e.target.value);
+});
+
+document.getElementById('colorPhotoBorderB').addEventListener('input', (e)=>{
+  root.setProperty('--photo-border-b', e.target.value);
+});
+
+document.getElementById('colorShipA').addEventListener('input', (e)=>{
+  root.setProperty('--ship-color-a', e.target.value);
+});
+
+document.getElementById('colorShipB').addEventListener('input', (e)=>{
+  root.setProperty('--ship-color-b', e.target.value);
+});
+
+document.getElementById('colorMyBubble').addEventListener('input', (e)=>{
+  root.setProperty('--imessage-bubble', e.target.value);
+});
+
+document.getElementById('colorMyBubbleText').addEventListener('input', (e)=>{
+  root.setProperty('--imessage-bubble-text', e.target.value);
+});
+
+document.getElementById('resetColors').addEventListener('click', ()=>{
+  root.removeProperty('--main');
+  root.removeProperty('--main-light');
+  root.removeProperty('--main-dark');
+  root.removeProperty('--accent');
+  root.removeProperty('--imessage-bubble');
+  root.removeProperty('--imessage-bubble-text');
+  root.removeProperty('--name-color-a');
+  root.removeProperty('--name-color-b');
+  root.removeProperty('--photo-border-a');
+  root.removeProperty('--photo-border-b');
+  root.removeProperty('--ship-color-a');
+  root.removeProperty('--ship-color-b');
+  document.getElementById('colorMain').value = defaults.main;
+  document.getElementById('colorAccent').value = defaults.accent;
+  document.getElementById('colorMyBubble').value = defaults.myBubble;
+  document.getElementById('colorMyBubbleText').value = defaults.myBubbleText;
+  document.getElementById('colorNameA').value = defaults.nameA;
+  document.getElementById('colorNameB').value = defaults.nameB;
+  document.getElementById('colorPhotoBorderA').value = defaults.photoBorderA;
+  document.getElementById('colorPhotoBorderB').value = defaults.photoBorderB;
+  document.getElementById('colorShipA').value = defaults.shipA;
+  document.getElementById('colorShipB').value = defaults.shipB;
+});
+
+
+/* 초기 정합성 보장 */
+refreshReadStatus();
+updateTimelineCols();
+refreshMusicIndexes();
+
+/* ===== 임시저장 / 불러오기 (localStorage) ===== */
+const STORAGE_KEY = 'pairTemplateSave_v1';
+const statusMsg = document.getElementById('statusMsg');
+
+function showStatus(msg){
+  statusMsg.textContent = msg;
+  setTimeout(()=>{ if(statusMsg.textContent === msg) statusMsg.textContent = ''; }, 2500);
+}
+
+function collectState(){
+  // contenteditable 텍스트 (DOM 순서 기준)
+  const texts = Array.from(document.querySelectorAll('[contenteditable="true"]')).map(el => el.innerHTML);
+
+  // 이미지 (src + has-image 여부, DOM 순서 기준 img 태그)
+  const images = Array.from(document.querySelectorAll('img')).map(img => ({
+    src: img.src.startsWith('data:') ? img.src : '',
+    hasImage: img.closest('.has-image') ? true : false
+  }));
+
+  // 색상 변수
+  const colorVars = [
+    '--main','--main-light','--main-dark','--accent',
+    '--imessage-bubble','--imessage-bubble-text',
+    '--name-color-a','--name-color-b',
+    '--photo-border-a','--photo-border-b',
+    '--ship-color-a','--ship-color-b'
+  ];
+  const colors = {};
+  colorVars.forEach(v => { colors[v] = root.getPropertyValue(v); });
+
+  // 색상 입력값
+  const colorInputs = {};
+  ['colorMain','colorAccent','colorMyBubble','colorMyBubbleText','colorNameA','colorNameB','colorPhotoBorderA','colorPhotoBorderB','colorShipA','colorShipB'].forEach(id=>{
+    colorInputs[id] = document.getElementById(id).value;
+  });
+
+  // 동적으로 추가/삭제된 요소 개수 (타임라인 단계, 메시지, 곡)
+  const counts = {
+    tlSteps: document.querySelectorAll('#timelineList .tl-step').length,
+    bubbles: Array.from(document.querySelectorAll('#msgBody > *')).map(el=>{
+      if(el.classList.contains('bubble-row')) return el.classList.contains('right') ? 'right' : 'left';
+      if(el.classList.contains('imsg-date')) return 'date';
+      return null;
+    }).filter(Boolean),
+    songs: document.querySelectorAll('#musicList .music-row').length
+  };
+
+  // 숨김 처리된 출처 표시
+  const hiddenCredits = Array.from(document.querySelectorAll('.banner-credit, .profile-photo-credit')).map(el => el.classList.contains('hidden'));
+
+  // 타임라인 단계별 글자색
+  const tlColors = Array.from(document.querySelectorAll('#timelineList .tl-step')).map(step=>{
+    const colorInput = step.querySelector('.tl-label-color');
+    const labelText = step.querySelector('.tl-label-text');
+    return {
+      colorValue: colorInput ? colorInput.value : '#d4537e',
+      textColor: labelText ? labelText.style.color : ''
+    };
+  });
+
+  return { texts, images, colors, colorInputs, counts, hiddenCredits, tlColors };
+}
+
+function applyState(state){
+  if(!state) return;
+
+  // 동적 요소 개수 맞추기 (타임라인 단계)
+  const tlList = document.getElementById('timelineList');
+  while(tlList.querySelectorAll('.tl-step').length < state.counts.tlSteps) addStep();
+  while(tlList.querySelectorAll('.tl-step').length > state.counts.tlSteps) tlList.lastElementChild.remove();
+
+  // 타임라인 단계별 글자색 적용
+  if(state.tlColors){
+    Array.from(document.querySelectorAll('#timelineList .tl-step')).forEach((step, i)=>{
+      const data = state.tlColors[i];
+      if(!data) return;
+      const colorInput = step.querySelector('.tl-label-color');
+      const labelText = step.querySelector('.tl-label-text');
+      if(colorInput && data.colorValue) colorInput.value = data.colorValue;
+      if(labelText) labelText.style.color = data.textColor || '';
+    });
+  }
+
+  // 메시지/날짜
+  const msgBody = document.getElementById('msgBody');
+  msgBody.innerHTML = '';
+  state.counts.bubbles.forEach(type=>{
+    if(type === 'date'){
+      const el = document.createElement('div');
+      el.className = 'imsg-date';
+      el.innerHTML = `<span class="date-text" contenteditable="true">날짜 / 시간</span><button class="date-remove" onclick="removeNode(this)">✕</button>`;
+      msgBody.appendChild(el);
+    }else{
+      const row = document.createElement('div');
+      row.className = `bubble-row ${type}`;
+      row.innerHTML = `<div class="bubble" contenteditable="true">메시지</div><button class="msg-remove" onclick="removeNode(this)">✕</button>`;
+      msgBody.appendChild(row);
+    }
+  });
+  refreshReadStatus();
+
+  // 곡 목록
+  const musicList = document.getElementById('musicList');
+  while(musicList.querySelectorAll('.music-row').length < state.counts.songs) addSong();
+  while(musicList.querySelectorAll('.music-row').length > state.counts.songs) musicList.lastElementChild.remove();
+  refreshMusicIndexes();
+
+  // 텍스트 적용
+  const editableEls = Array.from(document.querySelectorAll('[contenteditable="true"]'));
+  editableEls.forEach((el, i)=>{
+    if(state.texts[i] !== undefined) el.innerHTML = state.texts[i];
+  });
+
+  // 이미지 적용
+  const imgEls = Array.from(document.querySelectorAll('img'));
+  imgEls.forEach((img, i)=>{
+    const data = state.images[i];
+    if(!data) return;
+    if(data.src){
+      img.src = data.src;
+    }
+    const wrap = img.closest('.couple-banner, .profile-photo, .pair-photo, .music-cover, .music-thumb');
+    if(wrap){
+      if(data.hasImage) wrap.classList.add('has-image');
+      else wrap.classList.remove('has-image');
+    }
+  });
+
+  // 출처 숨김 상태
+  const creditEls = Array.from(document.querySelectorAll('.banner-credit, .profile-photo-credit'));
+  creditEls.forEach((el, i)=>{
+    if(state.hiddenCredits[i]) el.classList.add('hidden');
+    else el.classList.remove('hidden');
+  });
+
+  // 색상 적용
+  Object.entries(state.colors).forEach(([k,v])=>{
+    if(v) root.setProperty(k, v); else root.removeProperty(k);
+  });
+  Object.entries(state.colorInputs).forEach(([id,v])=>{
+    const input = document.getElementById(id);
+    if(input && v) input.value = v;
+  });
+}
+
+document.getElementById('saveTempBtn').addEventListener('click', ()=>{
+  try{
+    const state = collectState();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    showStatus('임시저장 완료!');
+  }catch(err){
+    showStatus('저장 실패: 저장 용량을 초과했을 수 있어요');
+  }
+});
+
+document.getElementById('loadTempBtn').addEventListener('click', ()=>{
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){ showStatus('저장된 내용이 없어요'); return; }
+    const state = JSON.parse(raw);
+    applyState(state);
+    showStatus('불러오기 완료!');
+  }catch(err){
+    showStatus('불러오기 실패');
+  }
+});
+
+/* 이미지로 저장 */
+document.getElementById('saveImageBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('saveImageBtn');
+  const original = btn.textContent;
+  btn.textContent = '저장 중...';
+  btn.disabled = true;
+
+  const frame = document.querySelector('.frame');
+  frame.classList.add('capture-mode');
+
+  try{
+    const canvas = await html2canvas(frame, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true
+    });
+    const link = document.createElement('a');
+    link.download = '페어_정리틀.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(err){
+    alert('이미지 저장 중 오류가 발생했습니다: ' + err.message);
+  }finally{
+    frame.classList.remove('capture-mode');
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>
